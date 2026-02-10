@@ -1,49 +1,123 @@
 const express = require("express");
 const cors = require("cors");
 const app = express()
-const PORT = 3001
-let nextId = 2
+const PORT = process.env.PORT || 3001;
+const pool = require("./db")
+async function createPostsTable(){
+    try{
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS posts(
+            id SERIAL PRIMARY KEY,
+            title TEXT NOT NULL,
+            body TEXT NOT NULL,
+            subreddit TEXT NOT NULL,
+            upvotes INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `)
+        console.log("posts are made visible");
+    } catch(err){
+        console.error("failed to create posts");
+    }
+};
+async function createSubredditsTable(){
+    try{
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS subreddits(
+            id SERIAL PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`
+        );
+        console.log("✅ subreddits table is ready");
+    }catch(err){
+        console.log("Failed to load subreddits",err);
+    }
+}
+createSubredditsTable();
+createPostsTable();
 app.use(express.json());
 app.use(cors());
-let posts = [{
-    id: 1,
-    title: "Welcome to the Reddit Clone",
-    body: "This is the first post on the platform.",
-    subreddit: "general",
-    upvotes: 12,
-    source: "user",
-}]
 
-app.get("/posts",(req,res)=>{
-    res.json(posts)
+app.get("/posts",async (req,res)=>{
+    try{
+        const result = await pool.query(
+            "SELECT * FROM posts ORDER BY created_at DESC"
+        );
+        res.json(result.rows);
+    } catch(err){
+        console.error(err)
+        res.status(500).json({error: "Failed to fetch posts!"});
+    }
 })
-app.post("/posts",(req,res)=>{
-    const {title,body,subreddit,source} = req.body;
+app.get("/subreddits",async(req,res)=>{
+    try{
+        const result = await pool.query(
+            "SELECT * FROM subreddits ORDER BY created_at DESC"
+        );
+        res.join(result.rows)
+    }catch(err){
+        console.error(err);
+        res.status(500).json({error:"Failed to fetch subreddits!"})
+    }
+})
+app.post("/posts",async (req,res)=>{
+    const {title,body,subreddit} = req.body;
     if(!title || !body || !subreddit){
         return res.status(400).json({
             error: "title, body and subreddit are required",
-        })
+        });
     }
-    const newPost = {
-        id: nextId++,
-        title,
-        body,
-        subreddit,
-        upvotes: 0,
-        source: source || "user",
+    try {
+        const result = await pool.query(
+            `
+            INSERT INTO posts(title,body,subreddit)
+            VALUES ($1, $2, $3)
+            RETURNING*
+            `,
+            [title,body,subreddit]
+        );
+        res.status(201).json(result.rows[0]);
+    }catch(err){
+        console.error(err);
+        res.status(500).json({error:"Failed to fetch posts"})
     }
-    posts.push(newPost)
-    res.status(201).json(newPost);
 })
-app.delete("/posts/:id",(req,res)=>{
+app.post("/subreddits", async (req,res)=>{
+    const {name} = req.body;
+    if(!name){
+        return res.status(400).json({error:"subreddit not found"});
+    }
+    try{
+        const result = await pool.query(
+            `INSERT INTO subreddits (name)
+            VALUES ($1)
+            ON CONFLICT (name) DO NOTHING
+            RETURNING *
+            `,[name]
+        );
+        if(result.row.length === 0){
+            return res.status(409).json({error: "subreddit already exists"})
+        }
+        res.status(201).json(result.rows[0]);
+    }catch(err){
+        console.error(err);
+        res.status(500).json({error:"failed to create subreddit"})
+    }
+})
+app.delete("/posts/:id",async (req,res)=>{
     const id = Number(req.params.id);
-    const initialLength = posts.length;
-    posts = posts.filter(post=>post.id !==id);
-    if(posts.length === initialLength){
-        return res.status(404).json({error:"Post not found!"})
-    }
-    res.status(204).end();
-})
+    try{
+        const result = await pool.query(
+            "DELETE FROM posts WHERE id = $1",[id]
+        );
+        if(result.rowCount===0){
+            return res.status(404).json({error: "Post not found!"});
+        } res.status(204).end();
+        }catch (err){
+            console.error(err);
+            res.status(500).json({error: "Failed to delete posts!"})
+        }
+});
 app.listen(PORT,()=>{
     console.log(`Server running on port ${PORT}`)
 })
