@@ -10,9 +10,13 @@ async function createPostsTable(){
             id SERIAL PRIMARY KEY,
             title TEXT NOT NULL,
             body TEXT NOT NULL,
-            subreddit TEXT NOT NULL,
+            subreddit_id INTEGER NOT NULL,
             upvotes INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_subreddit
+                FOREIGN KEY(subreddit_id)
+                REFERENCES subreddits(id)
+                ON DELETE CASCADE
             );
         `)
         console.log("posts are made visible");
@@ -40,9 +44,13 @@ app.use(cors());
 
 app.get("/posts",async (req,res)=>{
     try{
-        const result = await pool.query(
-            "SELECT * FROM posts ORDER BY created_at DESC"
-        );
+        const result = await pool.query(`
+            SELECT posts.*, subreddits.name
+            FROM posts
+            JOIN subreddits
+            ON posts.subreddit_id = subreddits.id
+            ORDER BY posts.created_at DESC            
+        `);
         res.json(result.rows);
     } catch(err){
         console.error(err)
@@ -61,8 +69,8 @@ app.get("/subreddits",async(req,res)=>{
     }
 })
 app.post("/posts",async (req,res)=>{
-    const {title,body,subreddit} = req.body;
-    if(!title || !body || !subreddit){
+    const {title,body,subredditId} = req.body;
+    if(!title || !body || !subredditId){
         return res.status(400).json({
             error: "title, body and subreddit are required",
         });
@@ -70,11 +78,11 @@ app.post("/posts",async (req,res)=>{
     try {
         const result = await pool.query(
             `
-            INSERT INTO posts(title,body,subreddit)
+            INSERT INTO posts(title,body,subreddit_id)
             VALUES ($1, $2, $3)
             RETURNING*
             `,
-            [title,body,subreddit]
+            [title,body,subredditId]
         );
         res.status(201).json(result.rows[0]);
     }catch(err){
@@ -105,7 +113,7 @@ app.post("/subreddits", async (req,res)=>{
     }
 })
 app.delete("/posts/:id",async (req,res)=>{
-    const id = Number(req.params.id);
+    const {id} = req.params;
     try{
         const result = await pool.query(
             "DELETE FROM posts WHERE id = $1",[id]
@@ -117,6 +125,22 @@ app.delete("/posts/:id",async (req,res)=>{
             console.error(err);
             res.status(500).json({error: "Failed to delete posts!"})
         }
+});
+app.delete("/subreddits/:id", async (req,res)=>{
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "DELETE FROM subreddits WHERE id = $1",
+      [id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Subreddit not found!" });
+    }
+    res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete subreddit!" });
+  }
 });
 app.listen(PORT,()=>{
     console.log(`Server running on port ${PORT}`)
