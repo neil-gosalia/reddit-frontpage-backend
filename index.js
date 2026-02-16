@@ -37,8 +37,12 @@ async function createSubredditsTable(){
         console.log("Failed to load subreddits",err);
     }
 }
-createSubredditsTable();
-createPostsTable();
+async function initDB() {
+  await createSubredditsTable();
+  await createPostsTable();
+}
+
+initDB();
 app.use(express.json());
 app.use(cors());
 
