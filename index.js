@@ -68,6 +68,16 @@ app.get("/subreddits",async(req,res)=>{
         res.status(500).json({error:"Failed to fetch subreddits!"})
     }
 })
+app.get("/reset-db", async (req, res) => {
+  try {
+    await pool.query("DROP TABLE IF EXISTS posts CASCADE;");
+    await pool.query("DROP TABLE IF EXISTS subreddits CASCADE;");
+    res.json({ message: "Tables dropped successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to drop tables" });
+  }
+});
 app.post("/posts",async (req,res)=>{
     const {title,body,subredditId} = req.body;
     if(!title || !body || !subredditId){
