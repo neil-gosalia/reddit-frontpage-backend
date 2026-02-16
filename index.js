@@ -82,6 +82,14 @@ app.get("/reset-db", async (req, res) => {
     res.status(500).json({ error: "Failed to drop tables" });
   }
 });
+app.get("/check", async (req,res)=>{
+  try{
+    const result = await pool.query("SELECT * FROM posts;");
+    res.json(result.rows);
+  }catch(err){
+    res.json({error: err.message});
+  }
+});
 app.post("/posts",async (req,res)=>{
     const {title,body,subredditId} = req.body;
     if(!title || !body || !subredditId){
