@@ -72,7 +72,6 @@ app.get("/subreddits",async(req,res)=>{
         res.status(500).json({error:"Failed to fetch subreddits!"})
     }
 })
-
 app.post("/posts",async (req,res)=>{
     const {title,body,subredditId} = req.body;
     if(!title || !body || !subredditId){
@@ -108,7 +107,7 @@ app.post("/subreddits", async (req,res)=>{
             RETURNING *
             `,[name]
         );
-        if(result.row.length === 0){
+        if(result.rows.length === 0){
             return res.status(409).json({error: "subreddit already exists"})
         }
         res.status(201).json(result.rows[0]);
