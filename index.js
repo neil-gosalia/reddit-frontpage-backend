@@ -86,34 +86,63 @@ app.get("/subreddits",async(req,res)=>{
         res.status(500).json({error:"Failed to fetch subreddits!"})
     }
 })
-app.post("/posts",async (req,res)=>{ //used to create new resources
-    const {title,body,subredditId} = req.body;
-    if(!title || !body || !subredditId){
-        return res.status(400).json({
-            error: "title, body and subreddit are required",
-        });
-    }
+app.post(
+  "/posts",
+  upload.single("image"),   // 🔥 ADD THIS
+  async (req, res) => {
     try {
-        const result = await pool.query(
-            `
-            INSERT INTO posts(title,body,subreddit_id)
-            VALUES ($1, $2, $3)
-            RETURNING*
-            `, //RETURNING* returns inserted rows
-            [title,body,subredditId]
-        );
-        res.status(201).json(result.rows[0]);
-    }catch(err){
-        console.error(err);
-        res.status(500).json({error:"Failed to fetch posts"})
+      const { title, body, subredditId } = req.body;
+
+      if (!title || !body || !subredditId) {
+        return res.status(400).json({
+          error: "title, body and subreddit are required",
+        });
+      }
+
+      let imageUrl = null;
+
+      // 🔥 If image exists, upload to Cloudinary
+      if (req.file) {
+        const uploadResult = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: "post_images" },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          stream.end(req.file.buffer);
+        });
+
+        imageUrl = uploadResult.secure_url;
+      }
+
+      const result = await pool.query(
+        `
+        INSERT INTO posts(title, body, subreddit_id, image)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *
+        `,
+        [title, body, subredditId, imageUrl]
+      );
+
+      res.status(201).json(result.rows[0]);
+
+    } catch (err) {
+      console.error("POST CREATE ERROR:", err);
+      res.status(500).json({ error: "Failed to create post" });
     }
-})
+  }
+);
 app.post("/subreddits",
     upload.fields([
         {name: "icon",maxCount: 1},
         {name: "banner",maxCount: 1},
     ]),
     async (req,res)=>{
+        console.log("BODY:", req.body);
+        console.log("FILES:", req.files);
+        console.log("Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME);
         const {name} = req.body;
         if(!name){
             return res.status(400).json({error:"Subreddit Name Required"});
