@@ -61,7 +61,7 @@ app.use(express.json());
 app.use(cors());
 
 app.get("/posts",async (req,res)=>{ //used to retrieve data; req=>data coming from frontend
-    try{//res =>data being sent to frontend
+    try{                            //res =>data being sent to frontend
         const result = await pool.query(`
             SELECT posts.*, subreddits.name
             FROM posts
