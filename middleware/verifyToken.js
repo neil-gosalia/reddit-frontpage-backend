@@ -1,20 +1,25 @@
-const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
 
-function verifyToken(req, res, next){
-    const authHeader = req.headers.authorization
-    const token = auhtHeader?.split(" ")[1];
-}
+function verifyToken(req, res, next) {
 
-if(!token){
-    return res.status(401).json({error: "Login Required"});
-}
+  const authHeader = req.headers.authorization;
 
-try{
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Login required" });
+  }
+
+  try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
     req.user = decoded;
+
     next();
-} catch(err){
-    res.status(401).json({error: "Invalid or Expired token"});
+
+  } catch (err) {
+    return res.status(403).json({ error: "Invalid or expired token" });
+  }
 }
 
 module.exports = verifyToken;
