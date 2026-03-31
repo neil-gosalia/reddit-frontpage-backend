@@ -21,7 +21,7 @@ router.post("/register",async(req,res)=>{
             `INSERT INTO users (username,email,password)
             VALUES ($1,$2,$3)
             RETURNING id,username,email`,
-            [username,email,password]
+            [username,email,hashedPassword]
         )
         const user = result.rows[0];
         const token = jwt.sign(
@@ -48,7 +48,7 @@ router.post("/login",async (req,res)=>{
             return res.status(401).json({error:"Invalid email or password"})
         }
         const user = result.rows[0];
-        const match = await bcrpyt.compare(password,user.password)
+        const match = await bcrypt.compare(password,user.password)
         if(!match){
             return res.status(401).json({error:"Invalid email or password"})
         }
