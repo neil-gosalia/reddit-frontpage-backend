@@ -1,41 +1,41 @@
-const pool = require("../db")
+const pool = require("../db");
 
 async function createUsersTable(){
-    try{
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS users (
-             id SERIAL PRIMARY KEY,
-             username TEXT UNIQUE NOT NULL,
-             email TEXT UNIQUE NOT NULL,
-             password TEXT UNIQUE NOT NULL,
-             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-        console.log("Users Table Ready")
-    } catch(err) {
-        console.error("Failed to create users table",err)
-    }
+  try{
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log("Users table ready");
+  } catch(err){
+    console.error("Failed to create users table",err);
+  }
 }
 
 async function createSubredditsTable(){
-    try{
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS subreddits(
-            id SERIAL PRIMARY KEY,
-            name TEXT UNIQUE NOT NULL,
-            icon TEXT NOT NULL,
-            banner TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
-            ;`
-        );
-        console.log("Subreddits Table Created")
-    } catch(err){
-        console.error("Unable to create subreddits table",err);
-    }
+  try{
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS subreddits (
+        id SERIAL PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        icon TEXT,
+        banner TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log("Subreddits table ready");
+  } catch(err){
+    console.error("Unable to create subreddits table",err);
+  }
 }
 
-async function createPostsTable() {
-  try {
+async function createPostsTable(){
+  try{
     await pool.query(`
       CREATE TABLE IF NOT EXISTS posts(
         id SERIAL PRIMARY KEY,
@@ -52,13 +52,13 @@ async function createPostsTable() {
           ON DELETE CASCADE
       );
     `);
-    console.log("✅ posts table ready");
-  } catch (err) {
-    console.error("Failed to create posts table", err);
+    console.log("Posts table ready");
+  } catch(err){
+    console.error("Failed to create posts table",err);
   }
 }
 
-async function initDB() {
+async function initDB(){
   await createUsersTable();
   await createSubredditsTable();
   await createPostsTable();
