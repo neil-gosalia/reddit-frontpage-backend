@@ -8,7 +8,7 @@ async function createUsersTable(){
              username TEXT UNIQUE NOT NULL,
              email TEXT UNIQUE NOT NULL,
              password TEXT UNIQUE NOT NULL,
-             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
         console.log("Users Table Ready")
@@ -22,7 +22,7 @@ async function createSubredditsTable(){
         await pool.query(`
             CREATE TABLE IF NOT EXISTS subreddits(
             id SERIAL PRIMARY KEY,
-            name SERIAL PRIMARY NOT NULL,
+            name TEXT UNIQUE NOT NULL,
             icon TEXT NOT NULL,
             banner TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
