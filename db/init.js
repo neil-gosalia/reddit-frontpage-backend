@@ -6,7 +6,7 @@ async function createUsersTable(){
             CREATE TABLE IF NOT EXISTS users (
              id SERIAL PRIMARY KEY,
              username TEXT UNIQUE NOT NULL,
-             email TEXT YNIQUE NOT NULL,
+             email TEXT UNIQUE NOT NULL,
              password TEXT UNIQUE NOT NULL,
              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             );
